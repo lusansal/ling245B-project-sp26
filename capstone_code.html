@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Costa & Santesteban (2004) - Experiment 5 (Final Replication)</title>
+  <!-- jsPsych v7.3.0 Core Library Engine & Styling CDN Modules -->
+  <script src="https://unpkg.com/jspsych@7.3.0/dist/index.browser.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/jspsych@7.3.0/css/jspsych.css">
+  
+  <!-- Core Structural Plugins for Media Preloading, Keyboard Anchors, and Vocal Capturing -->
+  <script src="https://unpkg.com/@jspsych/plugin-preload@2.1.0/dist/index.browser.min.js"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@2.1.0/dist/index.browser.min.js"></script>
+  
+  <!-- Post-Experimental Demographics Questionnaire Survey Modules -->
+  <script src="https://unpkg.com/@jspsych/plugin-survey-text@2.1.0/dist/index.browser.min.js"></script>
+  <script src="https://unpkg.com/@jspsych/plugin-survey-multi-choice@2.2.0/dist/index.browser.min.js"></script>
+
+  <style>
+    body {
+      background-color: #f4f6f8;
+      color: #333333;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+    /* Fixed 400x400 presentation layout viewport boundary */
+    .experiment-container {
+      width: 400px;
+      height: 400px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+    }
+    /* Language Selection Cue Circle Geometry Metrics */
+    .cue-circle {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      display: block;
+    }
+    .cue-red { background-color: #D90429; }   /* Red Circle = Speak in L1 */
+    .cue-blue { background-color: #0077B6; }  /* Blue Circle = Speak in L2 */
+    
+    .target-pic {
+      max-width: 250px;
+      max-height: 250px;
+      object-fit: contain;
+    }
+    .mic-status { color: #2b9348; font-weight: bold; }
+
+    /* Volume Meter Diagnostic Layout */
+    .meter-container {
+      width: 300px;
+      height: 20px;
+      background-color: #ddd;
+      border-radius: 10px;
+      margin: 20px auto;
+      overflow: hidden;
+      border: 1px solid #bbb;
+    }
+    .meter-bar {
+      width: 0%;
+      height: 100%;
+      background-color: #2b9348;
+      transition: width 0.1s ease;
+    }
+    .status-active {
+      color: #2b9348;
+      font-weight: bold;
+    }
+
+    /* Style Override to ensure the default jsPsych progress bar matches clean UI layout */
+    #jspsych-progressbar-container {
+      background-color: #eaeaea;
+      padding: 10px 0;
+      border-bottom: 1px solid #ccc;
+    }
+    #jspsych-progressbar-outer {
+      background-color: #d1d1d1 !important;
+      border-radius: 5px;
+    }
+    #jspsych-progressbar-inner {
+      background-color: #0077B6 !important; 
+      border-radius: 5px;
+    }
+    
+    /* Center alignment scaling for demographic feedback panels */
+    .jspsych-survey-text-question, .jspsych-survey-multi-choice-question {
+      margin-bottom: 2em;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+<body></body>
+<script>
+  // Global operational runtime calculation state variables
+  let completedTestTrials = 0;
+  let totalTestTrialsCount = 0;
+  let historicLanguage = null;
+
+  // 1. Initialize jsPsych Session Object
+  const jsPsych = initJsPsych({
+    show_progress_bar: true,
+    auto_update_progress_bar: false, // Override to provide programmatic calculation 
+    on_finish: function() {
+      const csv = jsPsych.data.get().csv();
+      fetch('/save-data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/plain;charset=utf-8',
+          'Participant-ID': participant_id
+        },
+        body: csv
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Save failed');
+        return response.text();
+      })
+      .then(() => {
+        console.log('Data uploaded successfully');
+        jsPsych.data.displayData('csv');
+      })
+      .catch(error => {
+        console.error('Data upload error:', error);
+        jsPsych.data.displayData('csv');
+      });
+    }
+  });
+
+  const participant_id = jsPsych.randomization.randomID(8);
+  jsPsych.data.addProperties({
+    participant_id: participant_id
+  });
+
+  // --- INTER-SUBJECT RANDOM ASSIGNMENT GENERATOR ---
+  // Randomly select Group 1 (500ms SOA) vs Group 2 (800ms SOA)
+  const PARTICIPANT_GROUP = jsPsych.randomization.sampleWithoutReplacement([1, 2], 1)[0];
+  
+  // Operational Interval Timing Calculations
+  const CUE_DURATION = 300; 
+  const TOTAL_SOA = (PARTICIPANT_GROUP === 1) ? 500 : 800;
+  const POST_CUE_BLANK_DURATION = TOTAL_SOA - CUE_DURATION; // 200ms or 500ms gap
+
+  // Cache group properties globally into all session rows
+  jsPsych.data.addProperties({
+    assigned_experimental_group: PARTICIPANT_GROUP,
+    session_total_soa: TOTAL_SOA
+  });
+
+  // 2. Exact Target Picture Stimuli Set Manifest
+  const verbalStimuli = [
+    { name: 'dog',    src: 'images/dog.png' },
+    { name: 'cheese', src: 'images/cheese.png' },
+    { name: 'window', src: 'images/window.png' },
+    { name: 'knife',  src: 'images/knife.png' },
+    { name: 'leaf',   src: 'images/leaf.png' },
+    { name: 'table',  src: 'images/table.png' },
+    { name: 'apple',  src: 'images/apple.png' },
+    { name: 'hat',    src: 'images/hat.png' },
+    { name: 'carrot', src: 'images/carrot.png' },
+    { name: 'rain',   src: 'images/rain.png' }
+  ];
+
+  const preloadImages = verbalStimuli.map(item => item.src);
+  const activeLanguages = ['L1', 'L2'];
+  const responseKeyMap = {
+    dog:    { L1: 'd', L2: 'p' },
+    cheese: { L1: 'c', L2: 'q' },
+    window: { L1: 'w', L2: 'v' },
+    knife:  { L1: 'k', L2: 'c' },
+    leaf:   { L1: 'l', L2: 'h' },
+    table:  { L1: 't', L2: 'm' },
+    apple:  { L1: 'a', L2: 'm' },
+    hat:    { L1: 'h', L2: 's' },
+    carrot: { L1: 'c', L2: 'z' },
+    rain:   { L1: 'r', L2: 'l' }
+  };
+  let masterTimeline = [];
+
+  // 3. Media Asset Preloader
+  masterTimeline.push({
+    type: jsPsychPreload,
+    images: preloadImages,
+    message: 'Loading visual picture matrix. Please stand by...'
+  });
+
+
+  // 6. Explicit Instructional Directives Block
+  const taskInstructions = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: function() {
+      return `
+        <div style="max-width: 650px; text-align: left; line-height: 1.8; font-size: 18px;">
+          <p>In this experiment, you will be shown a series of images one at a time.</p>
+          <p>The initial red or blue dot indicates what language to respond in.</p>
+          <p><strong>Red is L1 (English)</strong><br>
+          <strong>Blue is L2 (Spanish)</strong></p>
+          <p>For each image, press the first letter of the correct word in the cued language.</p>
+          <p>For example: <strong>dog</strong> is <strong>d</strong> in English and <strong>p</strong> in Spanish (perro).</p>
+          <br />
+          <p style="text-align: center; font-weight: bold; color: #555;">Press the SPACEBAR to begin.</p>
+        </div>
+      `;
+    },
+    choices: [' ']
+  };
+  masterTimeline.push(taskInstructions);
+
+  // 7. Dynamic Matrix Assembly: Cross 10 Items by 2 Languages (20 Trial Pools)
+  let testingConditions = [];
+  verbalStimuli.forEach(item => {
+    activeLanguages.forEach(lang => {
+      testingConditions.push({
+        item: item,
+        language: lang
+      });
+    });
+  });
+
+  // Shuffle trial block layout
+  testingConditions = jsPsych.randomization.shuffle(testingConditions);
+  totalTestTrialsCount = testingConditions.length;
+
+  // 8. Run Experimental Sequence Loops
+  testingConditions.forEach((trialProfile, index) => {
+    
+    // Step A: Pre-Cue Structural Baseline Fixation Cross Window
+    const fixationDot = {
+      type: jsPsychHtmlKeyboardResponse,
+      stimulus: `
+        <div class="experiment-container">
+          <div style="font-size: 50px; color: #bbb;">+</div>
+        </div>
+      `,
+      choices: "NO_KEYS",
+      trial_duration: 500
+    };
+    masterTimeline.push(fixationDot);
+
+// Step B: Language Instruction Circle Dot Cue Presentation (300ms)
+const circleCueTrial = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: (() => {
+    const targetCueColor = (trialProfile.language === 'L1') ? 'cue-red' : 'cue-blue';
+    return `
+      <div class="experiment-container">
+        <div class="cue-circle ${targetCueColor}"></div>
+      </div>
+    `;
+  })(),
+  choices: "NO_KEYS",
+  trial_duration: CUE_DURATION
+};
+masterTimeline.push(circleCueTrial);
+
+// Step C: Post-Cue Inter-Stimulus Blank RSI Gap Offset (200ms or 500ms)
+const postCueBlankTrial = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: `<div class="experiment-container"> <!-- Intentionally Blank layout placeholder to serve as separation context --> </div>`,
+  choices: "NO_KEYS",
+  trial_duration: POST_CUE_BLANK_DURATION
+};
+masterTimeline.push(postCueBlankTrial);
+const expectedKey = responseKeyMap[trialProfile.item.name][trialProfile.language];
+const keyboardResponseTrial = {
+  type: jsPsychHtmlKeyboardResponse,
+  stimulus: `<div class="experiment-container">
+    <img src="${trialProfile.item.src}" class="target-pic" alt="${trialProfile.item.name}" />
+    <p style="margin-top: 1.2em; font-size: 16px; color: #333;">
+      Press the first letter of the word in the cued language.
+    </p>
+  </div>`,
+  choices: [expectedKey, expectedKey.toUpperCase()],
+  data: {
+    phase_id: 'keyboard_production_run',
+    target_concept: trialProfile.item.name,
+    target_language: trialProfile.language,
+    expected_response: expectedKey
+  },
+  on_finish: function(data) {
+    historicLanguage = trialProfile.language;
+    data.response_letter = data.response;
+    data.response_time_ms = data.rt;
+    data.correct_response = data.response.toLowerCase() === expectedKey;
+    data.correct_response_time_ms = data.correct_response ? data.rt : null;
+
+    completedTestTrials++;
+    let absoluteProgressPercentage = completedTestTrials / totalTestTrialsCount;
+    jsPsych.setProgressBar(absoluteProgressPercentage * 0.9);
+  }
+};
+masterTimeline.push(keyboardResponseTrial);
+
+// Step E: Brief Intertrial Interval Rest State Buffer
+const postTrialRest = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: 'Processing...',
+    choices: "NO_KEYS",
+    trial_duration: 600
+};
+masterTimeline.push(postTrialRest);
+
+// Reminder screen every five images
+if ((index + 1) % 5 === 0 && index < testingConditions.length - 1) {
+  const reminderTrial = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: `
+      <div style="max-width: 650px; text-align: center; line-height: 1.6;">
+        <h3>Reminder</h3>
+        <p><span style="color:#D90429;font-weight:bold;">Red circle</span> means respond in <strong>L1 (English)</strong>.</p>
+        <p><span style="color:#0077B6;font-weight:bold;">Blue circle</span> means respond in <strong>L2 (Spanish)</strong>.</p>
+        <p style="margin-top: 1em; font-weight: bold;">Press <strong>SPACEBAR</strong> when you are ready for the next set of images.</p>
+      </div>
+    `,
+    choices: [' ']
+  };
+  masterTimeline.push(reminderTrial);
+}
+});
+
+  // 9. Post-Experimental Background Metadata Questionnaire Panels
+  const questionnaireDuration = {
+    type: jsPsychSurveyText,
+    questions: [{
+        prompt: "How long have you been speaking your second language (Spanish)? (e.g., '5 years', 'Since childhood')",
+        name: 'l2_duration_years',
+        required: true,
+        rows: 2,
+        columns: 40}],
+        data: { phase_id: 'questionnaire_duration' }};
+        masterTimeline.push(questionnaireDuration);  
+   const questionnaireProficiency = {
+    type: jsPsychSurveyMultiChoice,
+    questions: [{
+                prompt: "How would you rank your overall proficiency in your second language (Spanish)?",
+                options: ['Beginner', 'Intermediate', 'Advanced', 'Native / Bilingual Fluency'],
+                name: 'l2_proficiency_ranking',
+                required: true,
+                horizontal: false
+            }],
+            data: { phase_id: 'questionnaire_proficiency' },
+            on_finish: function() {
+                // Force progress tracking metric explicitly to 100% on exit
+                jsPsych.setProgressBar(1.0);
+            }
+        };
+const completeScreen = {
+    type: jsPsychHtmlKeyboardResponse,
+    stimulus: `<div style="max-width: 600px;">
+        <h2>Experimental Session Complete</h2>
+        <p>Your responses and language questionnaire profiles have been saved successfully.</p>
+        <hr style="border:0; border-top:1px solid #ddd; margin:25px 0;"/>
+        <p>Press <strong>ANY KEY</strong> to view your structural data sheet.</p>
+    </div>`
+};
+masterTimeline.push(completeScreen);
+
+// Initialize runtime execution 
+jsPsych.run(masterTimeline);
+</script>
+</html>
