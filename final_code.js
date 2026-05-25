@@ -21,7 +21,7 @@ const jsPsych = initJsPsych({
         // 2. Wait exactly 2.5 seconds (2500ms) so Cognition logs a "completed" status instead of "dropped"
         setTimeout(function() {
             // Replace XXXXXXXX with your actual Prolific completion code
-            window.location.href = "https://app.prolific.com/submissions/complete?cc=C1NSKUIM";
+            window.location.href = "https://app.prolific.com/submissions/complete?cc=XXXXXXXX";
         }, 2500); 
 
     } else {
