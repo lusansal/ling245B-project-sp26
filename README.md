@@ -40,7 +40,7 @@ Ten pictures were used:
 
 ```
 ling245B-project-sp26/
-  index.html          # main experiment file
+  final_code.js          # main experiment file
   experiment.js/      # JavaScript and CSS files
   README.md
 ```
