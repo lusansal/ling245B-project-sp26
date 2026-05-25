@@ -1,0 +1,58 @@
+
+/* Enlarged presentation layout viewport boundary */
+.experiment-container {
+  width: 600px;
+  height: 600px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  margin: 0 auto;
+}
+
+/* Language Selection Cue Circle Geometry Metrics */
+.cue-circle {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  display: block;
+}
+
+.cue-red { 
+  background-color: #D90429; 
+} /* Red Circle = Speak in L1 (English) */
+
+.cue-blue { 
+  background-color: #0077B6; 
+} /* Blue Circle = Speak in L2 (Spanish) */
+
+/* Large Target Image Display Rules */
+.target-pic {
+  max-width: 450px;
+  max-height: 450px;
+  object-fit: contain;
+}
+
+/* Every-5-images embedded reminder banner */
+.reminder-banner {
+  font-size: 18px;
+  font-weight: bold;
+  margin-bottom: 25px;
+  text-align: center;
+  padding: 10px;
+  background-color: #ffffff;
+  border: 1px dashed #cccccc;
+  border-radius: 4px;
+  width: 100%;
+}
+
+/* Grid layout controls for survey questionnaire formatting */
+.jspsych-survey-text-question, 
+.jspsych-survey-multi-choice-question {
+  margin-bottom: 2em;
+  text-align: left;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
